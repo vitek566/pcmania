@@ -4,11 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Custom PC Builder</title>
+    
+    <!-- Tailwind & Fonty -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    
+    <!-- Firebase Compat Knihovny -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
+
     <style>
         /* --- TÉMATA --- */
-        /* Prémiové téma (Výchozí) */
         :root {
             --font-main: 'Inter', sans-serif;
             --bg-main: #f8fafc;
@@ -21,7 +28,6 @@
             --border-color: #e2e8f0;
         }
 
-        /* ROG / Herní Téma */
         body.theme-rog {
             --font-main: 'Rajdhani', sans-serif;
             --bg-main: #09090b;
@@ -30,7 +36,7 @@
             --accent: #ef4444; /* ROG Červená */
             --accent-hover: #dc2626;
             --card-bg: #18181b;
-            --border-radius: 0px; /* Hranaté tvary */
+            --border-radius: 0px;
             --border-color: #27272a;
         }
 
@@ -73,7 +79,6 @@
             text-transform: uppercase;
             font-weight: bold;
             letter-spacing: 1px;
-            /* Diagonální seříznutí ala ROG */
             clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px);
         }
 
@@ -91,7 +96,6 @@
             outline: none;
         }
 
-        /* Skrývání obsahu */
         .hidden-section { display: none; }
     </style>
 </head>
@@ -137,15 +141,13 @@
             <div class="flex flex-col md:flex-row gap-8">
                 <!-- Konfigurační formulář -->
                 <div class="w-full md:w-2/3 space-y-6">
-                    <!-- CPU -->
                     <div class="custom-card p-6">
                         <label class="block text-sm font-bold mb-2 uppercase tracking-wide">Procesor (CPU)</label>
                         <select id="conf-cpu" class="w-full p-3 custom-input" onchange="updateCompatibility()">
-                            <option value="">-- Vyber procesor --</option>
+                            <option value="">-- Načítám data z databáze... --</option>
                         </select>
                     </div>
 
-                    <!-- Motherboard -->
                     <div class="custom-card p-6">
                         <label class="block text-sm font-bold mb-2 uppercase tracking-wide">Základní deska</label>
                         <select id="conf-mobo" class="w-full p-3 custom-input" onchange="calculateTotal()">
@@ -154,19 +156,17 @@
                         <p id="socket-warning" class="text-xs text-[var(--accent)] mt-2 hidden">Výběr desek byl omezen na kompatibilní socket.</p>
                     </div>
 
-                    <!-- GPU -->
                     <div class="custom-card p-6">
                         <label class="block text-sm font-bold mb-2 uppercase tracking-wide">Grafická Karta (GPU)</label>
                         <select id="conf-gpu" class="w-full p-3 custom-input" onchange="calculateTotal()">
-                            <option value="">-- Vyber grafickou kartu --</option>
+                            <option value="">-- Načítám data z databáze... --</option>
                         </select>
                     </div>
 
-                    <!-- RAM -->
                     <div class="custom-card p-6">
                         <label class="block text-sm font-bold mb-2 uppercase tracking-wide">Operační paměť (RAM)</label>
                         <select id="conf-ram" class="w-full p-3 custom-input" onchange="calculateTotal()">
-                            <option value="">-- Vyber paměť RAM --</option>
+                            <option value="">-- Načítám data z databáze... --</option>
                         </select>
                     </div>
                 </div>
@@ -196,23 +196,28 @@
             </div>
         </section>
 
-        <!-- SEKCE 3: ADMIN -->
+        <!-- SEKCE 3: ADMIN (Napojeno na Firebase Auth) -->
         <section id="tab-admin" class="hidden-section">
             <div id="admin-login" class="max-w-md mx-auto custom-card p-8 text-center mt-10">
                 <h2 class="text-2xl font-bold mb-6">Přístup pro prodejce</h2>
-                <input type="password" id="admin-pw" class="w-full p-3 custom-input mb-4" placeholder="Zadejte heslo...">
-                <button onclick="checkPassword()" class="w-full p-3 custom-btn">Přihlásit se</button>
-                <p id="admin-error" class="text-red-500 text-sm mt-4 hidden">Špatné heslo!</p>
+                <p class="text-sm text-[var(--text-muted)] mb-4">Zadej účet vytvořený ve Firebase Authentication.</p>
+                <input type="email" id="admin-email" class="w-full p-3 custom-input mb-4" placeholder="Váš admin e-mail...">
+                <input type="password" id="admin-pw" class="w-full p-3 custom-input mb-4" placeholder="Vaše heslo...">
+                <button onclick="loginAdmin()" class="w-full p-3 custom-btn">Přihlásit se do cloudu</button>
+                <p id="admin-error" class="text-red-500 text-sm mt-4 hidden">Špatný e-mail nebo heslo!</p>
             </div>
 
             <div id="admin-dashboard" class="hidden max-w-4xl mx-auto">
                 <div class="flex justify-between items-center mb-8">
-                    <h2 class="text-3xl font-bold">Správa produktů</h2>
+                    <div>
+                        <h2 class="text-3xl font-bold">Správa produktů</h2>
+                        <p class="text-sm text-[var(--text-muted)] mt-1">Nyní jsi připojen k Firebase. Změny ihned uvidí všichni návštěvníci.</p>
+                    </div>
                     <button onclick="logoutAdmin()" class="px-4 py-2 border border-[var(--border-color)] rounded hover:bg-red-500 hover:text-white transition">Odhlásit</button>
                 </div>
 
                 <div class="custom-card p-6 mb-8">
-                    <h3 class="text-xl font-semibold mb-4">Přidat nový komponent</h3>
+                    <h3 class="text-xl font-semibold mb-4">Přidat nový komponent do databáze</h3>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                         <div>
                             <label class="block text-sm mb-1 text-[var(--text-muted)]">Kategorie</label>
@@ -237,70 +242,166 @@
                             <input type="text" id="add-socket" class="w-full p-2 custom-input" placeholder="Např. AM5, LGA1700">
                         </div>
                     </div>
-                    <button onclick="addComponent()" class="px-6 py-3 custom-btn">Uložit produkt</button>
-                    <p class="text-xs text-[var(--text-muted)] mt-4">Poznámka: Protože je web zdarma a bez databáze, změny se uloží pouze do tohoto prohlížeče (lokálně). Pro trvalé uložení pro všechny návštěvníky je nutné data upravit přímo v kódu.</p>
+                    <button onclick="addComponent()" class="px-6 py-3 custom-btn">Uložit do cloudu</button>
                 </div>
             </div>
         </section>
     </main>
 
     <script>
-        // --- 1. DATOVÁ STRUKTURA ---
-        const defaultData = {
-            cpus: [
-                { id: 1, name: "Intel Core i5-13400F", socket: "LGA1700", price: 4500 },
-                { id: 2, name: "AMD Ryzen 5 7600", socket: "AM5", price: 5000 },
-                { id: 3, name: "Intel Core i7-14700K", socket: "LGA1700", price: 10500 },
-                { id: 4, name: "AMD Ryzen 7 7800X3D", socket: "AM5", price: 9800 }
-            ],
-            mobos: [
-                { id: 1, name: "ASUS PRIME B760-PLUS", socket: "LGA1700", price: 3200 },
-                { id: 2, name: "ASUS ROG STRIX Z790-F", socket: "LGA1700", price: 9500 },
-                { id: 3, name: "GIGABYTE B650 EAGLE", socket: "AM5", price: 4000 },
-                { id: 4, name: "ASUS ROG CROSSHAIR X670E", socket: "AM5", price: 12000 }
-            ],
-            gpus: [
-                { id: 1, name: "NVIDIA GeForce RTX 4060 8GB", price: 7800 },
-                { id: 2, name: "AMD Radeon RX 7800 XT 16GB", price: 13500 },
-                { id: 3, name: "ASUS ROG STRIX RTX 4080 SUPER", price: 28900 }
-            ],
-            rams: [
-                { id: 1, name: "16GB (2x8) Kingston FURY DDR4", price: 1200 },
-                { id: 2, name: "32GB (2x16) G.Skill Trident Z5 RGB DDR5", price: 3500 }
-            ],
-            prebuilts: [
-                { id: 1, name: "Pro Workstation Elite", desc: "Minimalistický design, brutální výkon pro střih videa a 3D.", price: 35000, img: "💻" },
-                { id: 2, name: "ROG Cyber Beast", desc: "Krev a pot. Herní bestie v plné palbě s nejnovější RTX 4080.", price: 65000, img: "👾" },
-                { id: 3, name: "Office Minimal", desc: "Tichý, rychlý, nenápadný. Ideální společník na práci.", price: 12500, img: "🏢" }
-            ]
+        // --- 1. FIREBASE KONFIGURACE ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyCMEXjRXOwRHFIse4FyZZNXrlqRlgVqORs",
+            authDomain: "pc-builder-30614.firebaseapp.com",
+            projectId: "pc-builder-30614",
+            storageBucket: "pc-builder-30614.firebasestorage.app",
+            messagingSenderId: "661557575634",
+            appId: "1:661557575634:web:10c19ad05349910767d20b",
+            measurementId: "G-RFNCJXMT0Y"
         };
 
-        // Načtení dat z localStorage nebo použití výchozích
-        let db = JSON.parse(localStorage.getItem('pcConfigData')) || defaultData;
+        // Inicializace aplikace
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const dbFirestore = firebase.firestore();
+
+        // Výchozí data (aby web nebyl prázdný, dokud si nenaklikáš první data do Firebase)
+        const defaultData = {
+            cpus: [{ id: "def1", name: "Intel Core i5-13400F", socket: "LGA1700", price: 4500 }],
+            mobos: [{ id: "def2", name: "ASUS PRIME B760-PLUS", socket: "LGA1700", price: 3200 }],
+            gpus: [{ id: "def3", name: "NVIDIA GeForce RTX 4060 8GB", price: 7800 }],
+            rams: [{ id: "def4", name: "16GB (2x8) Kingston FURY DDR4", price: 1200 }],
+            prebuilts: [{ id: "def5", name: "Zkušební PC", desc: "Základní PC sestava.", price: 15000, img: "💻" }]
+        };
+
+        // Proměnná pro naši aktivní databázi na webu
+        let db = JSON.parse(JSON.stringify(defaultData)); 
         let selectedCPU = null;
 
-        // --- 2. LOGIKA ZOBRAZENÍ (TÉMATA A ZÁLOŽKY) ---
+        // --- 2. NAČÍTÁNÍ Z FIREBASE ---
+        async function loadDataFromFirebase() {
+            try {
+                const snapshot = await dbFirestore.collection("components").get();
+                // Resetujeme data na výchozí a přidáme k nim ty z cloudu
+                db = JSON.parse(JSON.stringify(defaultData)); 
+
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    if(db[data.category]) {
+                        db[data.category].push({ id: doc.id, ...data });
+                    }
+                });
+                
+                // Překreslit stránku s novými daty
+                renderConfigurator();
+                renderShowcase();
+                console.log("Data z Firebase úspěšně načtena!");
+            } catch (error) {
+                console.error("Chyba při načítání databáze: ", error);
+            }
+        }
+
+        // --- 3. FIREBASE AUTHENTICATION (PŘIHLÁŠENÍ) ---
+        // Hlídač stavu: Zjistí, zda je admin přihlášen, a podle toho ukáže Dashboard
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                document.getElementById('admin-login').classList.add('hidden');
+                document.getElementById('admin-dashboard').classList.remove('hidden');
+            } else {
+                document.getElementById('admin-dashboard').classList.add('hidden');
+                document.getElementById('admin-login').classList.remove('hidden');
+            }
+        });
+
+        function loginAdmin() {
+            const email = document.getElementById('admin-email').value;
+            const pw = document.getElementById('admin-pw').value;
+            const errorMsg = document.getElementById('admin-error');
+            
+            errorMsg.classList.add('hidden');
+            
+            auth.signInWithEmailAndPassword(email, pw)
+                .then(() => {
+                    document.getElementById('admin-email').value = '';
+                    document.getElementById('admin-pw').value = '';
+                })
+                .catch((error) => {
+                    errorMsg.classList.remove('hidden');
+                    console.error(error);
+                });
+        }
+
+        function logoutAdmin() {
+            auth.signOut();
+        }
+
+        // --- 4. ZÁPIS DO FIREBASE (ADMIN) ---
+        async function addComponent() {
+            const cat = document.getElementById('add-category').value;
+            const name = document.getElementById('add-name').value;
+            const price = parseInt(document.getElementById('add-price').value);
+            const socket = document.getElementById('add-socket').value;
+
+            if (!name || isNaN(price)) {
+                alert("Vyplň název a cenu!");
+                return;
+            }
+
+            const newItem = {
+                category: cat,
+                name: name,
+                price: price
+            };
+
+            if (cat === 'cpus' || cat === 'mobos') {
+                if (!socket) {
+                    alert("Pro procesory a desky musíš zadat socket!");
+                    return;
+                }
+                newItem.socket = socket;
+            }
+
+            if (cat === 'prebuilts') {
+                newItem.desc = "Vlastní přidaná sestava";
+                newItem.img = "🔥";
+            }
+
+            try {
+                // Přidání přímo do Firebase Firestore
+                await dbFirestore.collection("components").add(newItem);
+                
+                alert("Produkt byl úspěšně uložen do cloudu!");
+                
+                // Vyčistit formulář
+                document.getElementById('add-name').value = '';
+                document.getElementById('add-price').value = '';
+                document.getElementById('add-socket').value = '';
+                
+                // Znovu načíst data, aby se zobrazila na webu
+                loadDataFromFirebase();
+            } catch (error) {
+                alert("Chyba při ukládání: " + error.message);
+                console.error(error);
+            }
+        }
+
+        // --- ZBYTKOVÁ LOGIKA APLIKACE ---
         function switchTab(tabName) {
-            // Skrýt všechny sekce
             document.querySelectorAll('section').forEach(sec => sec.classList.add('hidden-section'));
-            // Zobrazit vybranou
             document.getElementById('tab-' + tabName).classList.remove('hidden-section');
 
-            // Přepnutí tématu na základě záložky
             if (tabName === 'configurator') {
                 document.body.classList.add('theme-rog');
-                renderConfigurator(); // Aktualizace selectů
+                renderConfigurator();
             } else {
                 document.body.classList.remove('theme-rog');
                 if (tabName === 'showcase') renderShowcase();
             }
         }
 
-        // --- 3. RENDEROVÁNÍ UKÁZEK ---
         function renderShowcase() {
             const container = document.getElementById('prebuilts-container');
             container.innerHTML = '';
-            
             db.prebuilts.forEach(pc => {
                 container.innerHTML += `
                     <div class="custom-card p-6 flex flex-col h-full">
@@ -316,7 +417,6 @@
             });
         }
 
-        // --- 4. LOGIKA KONFIGURÁTORU ---
         function populateSelect(selectId, dataArray, emptyText) {
             const select = document.getElementById(selectId);
             select.innerHTML = `<option value="">-- \${emptyText} --</option>`;
@@ -335,7 +435,6 @@
             populateSelect('conf-gpu', db.gpus, 'Vyber grafickou kartu');
             populateSelect('conf-ram', db.rams, 'Vyber paměť RAM');
             
-            // Mobo čeká na CPU
             const moboSelect = document.getElementById('conf-mobo');
             moboSelect.innerHTML = `<option value="">-- Nejdříve vyber procesor --</option>`;
             moboSelect.disabled = true;
@@ -352,12 +451,10 @@
                 warning.classList.add('hidden');
                 selectedCPU = null;
             } else {
-                // Najít vybraný socket
                 const selectedOption = cpuSelect.options[cpuSelect.selectedIndex];
                 const targetSocket = selectedOption.dataset.socket;
                 selectedCPU = targetSocket;
 
-                // Vyfiltrovat desky
                 const compatibleMobos = db.mobos.filter(m => m.socket === targetSocket);
                 
                 moboSelect.disabled = false;
@@ -378,7 +475,6 @@
                 if (select && select.value !== "" && select.selectedIndex > 0) {
                     const opt = select.options[select.selectedIndex];
                     const price = parseInt(opt.dataset.price);
-                    // Zobrazit jen název (odstranit cenu v závorce pomocí regexu pro lepší vzhled)
                     const nameOnly = opt.textContent.split(' (+')[0];
                     
                     sumElement.textContent = nameOnly;
@@ -391,25 +487,6 @@
             document.getElementById('sum-total').textContent = total.toLocaleString() + ' Kč';
         }
 
-        // --- 5. ADMIN LOGIKA ---
-        const ADMIN_PW = "heslo123"; // Zde si změníš heslo!
-
-        function checkPassword() {
-            const input = document.getElementById('admin-pw').value;
-            if (input === ADMIN_PW) {
-                document.getElementById('admin-login').classList.add('hidden');
-                document.getElementById('admin-dashboard').classList.remove('hidden');
-                document.getElementById('admin-pw').value = '';
-            } else {
-                document.getElementById('admin-error').classList.remove('hidden');
-            }
-        }
-
-        function logoutAdmin() {
-            document.getElementById('admin-dashboard').classList.add('hidden');
-            document.getElementById('admin-login').classList.remove('hidden');
-        }
-
         function toggleSocketInput() {
             const cat = document.getElementById('add-category').value;
             const sockWrap = document.getElementById('socket-wrapper');
@@ -420,53 +497,11 @@
             }
         }
 
-        function addComponent() {
-            const cat = document.getElementById('add-category').value;
-            const name = document.getElementById('add-name').value;
-            const price = parseInt(document.getElementById('add-price').value);
-            const socket = document.getElementById('add-socket').value;
-
-            if (!name || isNaN(price)) {
-                alert("Vyplň název a cenu!");
-                return;
-            }
-
-            const newItem = {
-                id: Date.now(),
-                name: name,
-                price: price
-            };
-
-            if (cat === 'cpus' || cat === 'mobos') {
-                if (!socket) {
-                    alert("Pro procesory a desky musíš zadat socket!");
-                    return;
-                }
-                newItem.socket = socket;
-            }
-
-            if (cat === 'prebuilts') {
-                newItem.desc = "Vlastní přidaná sestava";
-                newItem.img = "🔥";
-            }
-
-            // Přidat do databáze a uložit
-            db[cat].push(newItem);
-            localStorage.setItem('pcConfigData', JSON.stringify(db));
-
-            alert("Produkt úspěšně přidán!");
-            
-            // Vyčistit formulář
-            document.getElementById('add-name').value = '';
-            document.getElementById('add-price').value = '';
-            document.getElementById('add-socket').value = '';
-        }
-
-        // Inicializace při načtení
+        // Spuštění po načtení stránky
         window.onload = () => {
-            switchTab('showcase'); // Otevře první záložku
+            switchTab('showcase'); 
+            loadDataFromFirebase(); // Okamžitě se zeptá Firebase na aktuální data
         };
     </script>
 </body>
 </html>
-
