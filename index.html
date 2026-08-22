@@ -12,7 +12,6 @@
     <!-- Firebase Compat Knihovny -->
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
 
     <style>
         /* --- TÉMATA --- */
@@ -40,7 +39,6 @@
             --border-color: #27272a;
         }
 
-        /* --- ZÁKLADNÍ STYLY --- */
         body {
             font-family: var(--font-main);
             background-color: var(--bg-main);
@@ -131,7 +129,7 @@
             </div>
         </section>
 
-        <!-- SEKCE 2: HERNÍ KONFIGURÁTOR (ROG VIBE) -->
+        <!-- SEKCE 2: HERNÍ KONFIGURÁTOR -->
         <section id="tab-configurator" class="hidden-section">
             <div class="text-center mb-12">
                 <h1 class="text-5xl font-bold mb-4 uppercase tracking-wider text-[var(--accent)]">Vytvoř své monstrum</h1>
@@ -139,9 +137,7 @@
             </div>
 
             <div class="flex flex-col md:flex-row gap-8">
-                <!-- Konfigurační formulář -->
                 <div class="w-full md:w-2/3 space-y-6">
-                    <!-- CPU & Cooler -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="custom-card p-6">
                             <label class="block text-sm font-bold mb-2 uppercase tracking-wide">Procesor (CPU)</label>
@@ -157,7 +153,6 @@
                         </div>
                     </div>
 
-                    <!-- Motherboard & RAM -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="custom-card p-6">
                             <label class="block text-sm font-bold mb-2 uppercase tracking-wide">Základní deska</label>
@@ -174,7 +169,6 @@
                         </div>
                     </div>
 
-                    <!-- GPU & Storage -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="custom-card p-6">
                             <label class="block text-sm font-bold mb-2 uppercase tracking-wide">Grafická Karta (GPU)</label>
@@ -190,7 +184,6 @@
                         </div>
                     </div>
 
-                    <!-- PSU & Case -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="custom-card p-6">
                             <label class="block text-sm font-bold mb-2 uppercase tracking-wide">Zdroj (PSU)</label>
@@ -236,21 +229,21 @@
             </div>
         </section>
 
-        <!-- SEKCE 3: ADMIN (Napojeno na Firebase Auth) -->
+        <!-- SEKCE 3: ADMIN (HESLO NATVRDO V KÓDU) -->
         <section id="tab-admin" class="hidden-section">
             <div id="admin-login" class="max-w-md mx-auto custom-card p-8 text-center mt-10">
-                <h2 class="text-2xl font-bold mb-6">Přístup pro prodejce</h2>
-                <input type="email" id="admin-email" class="w-full p-3 custom-input mb-4" placeholder="Váš admin e-mail...">
-                <input type="password" id="admin-pw" class="w-full p-3 custom-input mb-4" placeholder="Vaše heslo...">
-                <button onclick="loginAdmin()" class="w-full p-3 custom-btn">Přihlásit se do cloudu</button>
-                <p id="admin-error" class="text-red-500 text-sm mt-4 hidden">Špatný e-mail nebo heslo!</p>
+                <h2 class="text-2xl font-bold mb-6">Administrace</h2>
+                <p class="text-sm text-[var(--text-muted)] mb-4">Zadejte heslo:</p>
+                <input type="password" id="admin-pw" class="w-full p-3 custom-input mb-4" placeholder="Zadejte heslo...">
+                <button onclick="loginAdmin()" class="w-full p-3 custom-btn">Vstoupit</button>
+                <p id="admin-error" class="text-red-500 text-sm mt-4 hidden">Špatné heslo!</p>
             </div>
 
             <div id="admin-dashboard" class="hidden max-w-4xl mx-auto">
                 <div class="flex justify-between items-center mb-8">
                     <div>
                         <h2 class="text-3xl font-bold">Správa produktů</h2>
-                        <p class="text-sm text-[var(--text-muted)] mt-1">Nyní jsi připojen k Firebase. Změny ihned uvidí všichni návštěvníci.</p>
+                        <p class="text-sm text-[var(--text-muted)] mt-1">Připojeno k Firebase cloudu.</p>
                     </div>
                     <button onclick="logoutAdmin()" class="px-4 py-2 border border-[var(--border-color)] rounded hover:bg-red-500 hover:text-white transition">Odhlásit</button>
                 </div>
@@ -293,7 +286,7 @@
                             </div>
                             <div>
                                 <label class="block text-sm mb-1 text-[var(--text-muted)]">Popis sestavy</label>
-                                <textarea id="add-desc" class="w-full p-2 custom-input h-24" placeholder="Krátký popis sestavy a pro koho je určená..."></textarea>
+                                <textarea id="add-desc" class="w-full p-2 custom-input h-24" placeholder="Krátký popis sestavy..."></textarea>
                             </div>
                         </div>
                     </div>
@@ -316,20 +309,14 @@
         };
 
         firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
         const dbFirestore = firebase.firestore();
 
-        // Čistá výchozí data (všechny kategorie)
+        // Heslo zapsané přímo v kódu
+        const ADMIN_PASSWORD = "VItaakpc";
+
         const defaultData = {
-            cpus: [],
-            coolers: [],
-            mobos: [],
-            rams: [],
-            gpus: [],
-            storages: [],
-            psus: [],
-            cases: [],
-            prebuilts: []
+            cpus: [], coolers: [], mobos: [], rams: [],
+            gpus: [], storages: [], psus: [], cases: [], prebuilts: []
         };
 
         let db = JSON.parse(JSON.stringify(defaultData)); 
@@ -355,34 +342,26 @@
             }
         }
 
-        // --- 3. PŘIHLÁŠENÍ ---
-        auth.onAuthStateChanged(user => {
-            if (user) {
-                document.getElementById('admin-login').classList.add('hidden');
-                document.getElementById('admin-dashboard').classList.remove('hidden');
-            } else {
-                document.getElementById('admin-dashboard').classList.add('hidden');
-                document.getElementById('admin-login').classList.remove('hidden');
-            }
-        });
-
+        // --- 3. PŘIHLÁŠENÍ PŘES HESLO V KÓDU ---
         function loginAdmin() {
-            const email = document.getElementById('admin-email').value;
             const pw = document.getElementById('admin-pw').value;
             const errorMsg = document.getElementById('admin-error');
+            
             errorMsg.classList.add('hidden');
             
-            auth.signInWithEmailAndPassword(email, pw)
-                .then(() => {
-                    document.getElementById('admin-email').value = '';
-                    document.getElementById('admin-pw').value = '';
-                })
-                .catch((error) => {
-                    errorMsg.classList.remove('hidden');
-                });
+            if (pw === ADMIN_PASSWORD) {
+                document.getElementById('admin-login').classList.add('hidden');
+                document.getElementById('admin-dashboard').classList.remove('hidden');
+                document.getElementById('admin-pw').value = '';
+            } else {
+                errorMsg.classList.remove('hidden');
+            }
         }
 
-        function logoutAdmin() { auth.signOut(); }
+        function logoutAdmin() {
+            document.getElementById('admin-dashboard').classList.add('hidden');
+            document.getElementById('admin-login').classList.remove('hidden');
+        }
 
         // --- 4. ADMIN: PŘIDÁVÁNÍ DAT ---
         function toggleInputs() {
@@ -433,7 +412,6 @@
                 await dbFirestore.collection("components").add(newItem);
                 alert("Produkt byl úspěšně uložen do cloudu!");
                 
-                // Vyčištění
                 document.getElementById('add-name').value = '';
                 document.getElementById('add-price').value = '';
                 document.getElementById('add-socket').value = '';
@@ -464,19 +442,17 @@
             const container = document.getElementById('prebuilts-container');
             container.innerHTML = '';
 
-            // Ošetření prázdného stavu
             if (db.prebuilts.length === 0) {
-                container.innerHTML = `<div class="col-span-full text-center py-10 text-[var(--text-muted)]">Zatím zde nejsou žádné hotové sestavy. Přidejte je v Admin sekci.</div>`;
+                container.innerHTML = `<div class="col-span-full text-center py-10 text-[var(--text-muted)]">Zatím zde nejsou žádné hotové sestavy.</div>`;
                 return;
             }
 
             db.prebuilts.forEach(pc => {
-                // Vykreslení obrázku (pokud je to URL, vloží img, pokud text/emoji, vloží div)
                 let imageHtml = "";
-                if (pc.img.startsWith('http')) {
+                if (pc.img && pc.img.startsWith('http')) {
                     imageHtml = `<img src="${pc.img}" alt="${pc.name}" class="w-full h-48 object-cover rounded-md mb-4 border border-[var(--border-color)]">`;
                 } else {
-                    imageHtml = `<div class="text-6xl text-center mb-6">${pc.img}</div>`;
+                    imageHtml = `<div class="text-6xl text-center mb-6">${pc.img || '🖥️'}</div>`;
                 }
 
                 container.innerHTML += `
